@@ -9,7 +9,10 @@
     "generate": "node generate.mjs",
     "bench": "node --expose-gc --max-old-space-size=16384 bench.mjs",
     "check": "node compare.mjs",
-    "inspect": "node inspect.mjs"
+    "inspect": "node inspect.mjs",
+    "profile": "node profiler/run.mjs",
+    "profile:report": "node profiler/report.mjs",
+    "profile:test": "node --test profiler/tests/*.test.mjs"
   },
   "dependencies": {
     "@rspack/core": "2.3.0-rc.0"

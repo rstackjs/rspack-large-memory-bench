@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { Assets, ModuleInputs, StatsExport } from './plugins.mjs';
 
-export function config(root, record) {
+export function config(root, record, { isolated = false } = {}) {
   // Fix the overlap between the two compilers using hooks instead of timers.
   const frontEnd = Promise.withResolvers();
   const serverEmit = Promise.withResolvers();
@@ -83,7 +83,7 @@ export function config(root, record) {
           : false,
       },
       plugins: [
-        overlap,
+        ...(!isolated ? [overlap] : []),
         new Assets(record),
         new ModuleInputs(),
         ...(web ? [new StatsExport(record)] : []),

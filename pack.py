@@ -10,6 +10,16 @@ FILES = (
     ".gitignore", "README.md", "baseline.json", "bench.mjs", "compare.mjs",
     "config.mjs", "generate.mjs", "inspect.mjs", "mapped-input.cjs", "pack.py",
     "package-lock.json", "package.json", "plugins.mjs",
+    "profiler/Dockerfile", "profiler/run.mjs", "profiler/worker.mjs",
+    "profiler/collect.mjs", "profiler/heap.py", "profiler/model.mjs",
+    "profiler/report.mjs", "profiler/native/allocator.rs",
+    "profiler/native/build.py", "profiler/native/analyze.py", "profiler/native/source.py",
+    "profiler/tests/report.test.mjs", "profiler/tests/heap.test.mjs",
+    "profiler/tests/native.test.mjs",
+    "profiler/tests/archive.test.mjs",
+    "profiler/bootstrap.py",
+    "docs/report-overview.jpg", "docs/report-distributions.jpg",
+    "docs/report-allocations.jpg",
 )
 
 if __name__ == "__main__":

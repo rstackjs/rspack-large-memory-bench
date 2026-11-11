@@ -3,3 +3,6 @@
 /dist/
 /results/
 /large-memory.tar.gz
+
+/.profile-cache/
+__pycache__/
