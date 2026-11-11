@@ -17,9 +17,11 @@ FILES = (
     "profiler/tests/report.test.mjs", "profiler/tests/heap.test.mjs",
     "profiler/tests/native.test.mjs",
     "profiler/tests/archive.test.mjs",
-    "profiler/bootstrap.py",
+    "profiler/bootstrap.py", "profiler/environment.mjs", "profiler/releases.Dockerfile",
+    "profiler/versions.mjs", "profiler/versions-model.mjs", "profiler/versions-report.mjs",
+    "profiler/tests/versions.test.mjs",
     "docs/report-overview.jpg", "docs/report-distributions.jpg",
-    "docs/report-allocations.jpg",
+    "docs/report-allocations.jpg", "docs/version-comparison.jpg",
 )
 
 if __name__ == "__main__":

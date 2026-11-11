@@ -13,7 +13,9 @@ for name in inputs:
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(source / name, target)
 os.chdir('/case')
-child = subprocess.Popen(['node', 'profiler/run.mjs', sys.argv[1], '--inside'])
+arguments = (['profiler/versions.mjs', *sys.argv[2:]] if sys.argv[1] == 'compare'
+             else ['profiler/run.mjs', sys.argv[1]])
+child = subprocess.Popen(['node', *arguments, '--inside'])
 try:
     status = child.wait()
 except BaseException:

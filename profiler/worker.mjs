@@ -12,7 +12,14 @@ if (!global.gc || !['client', 'server'].includes(target)) throw Error('Invalid w
 process.env.RAYON_NUM_THREADS ??= '6';
 process.env.TOKIO_WORKER_THREADS ??= '6';
 const require = createRequire(import.meta.url);
-const { rspack } = await import('@rspack/core');
+const coreRequire = process.env.BENCH_CORE_ROOT
+  ? createRequire(path.join(process.env.BENCH_CORE_ROOT, 'package.json')) : require;
+const coreVersion = coreRequire('@rspack/core/package.json').version;
+const bindingVersion = coreRequire('@rspack/binding/package.json').version;
+if (process.env.BENCH_EXPECTED_VERSION &&
+    (coreVersion !== process.env.BENCH_EXPECTED_VERSION || bindingVersion !== coreVersion))
+  throw Error(`Version mismatch: expected ${process.env.BENCH_EXPECTED_VERSION}, core ${coreVersion}, binding ${bindingVersion}`);
+const { rspack } = process.env.BENCH_CORE_ROOT ? coreRequire('@rspack/core') : await import('@rspack/core');
 let native;
 if (lane === 'native') {
   native = require(process.env.NAPI_RS_NATIVE_LIBRARY_PATH);
@@ -109,7 +116,7 @@ try {
   fs.writeFileSync(path.join(out, 'worker.json'), JSON.stringify({
     target, lane, preset, phases, steady, manifest, startedAt, finishedAt: new Date().toISOString(),
     runtime: { node: process.version, arch: process.arch, platform: process.platform,
-      rspack: require('@rspack/core/package.json').version,
+      rspack: coreVersion, binding: bindingVersion,
       rayon: process.env.RAYON_NUM_THREADS, tokio: process.env.TOKIO_WORKER_THREADS },
     kernelHighWater: process.resourceUsage().maxRSS * 1024,
     snapshotOverheadIncludedInHighWater: lane.startsWith('js-'),

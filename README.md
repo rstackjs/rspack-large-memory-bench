@@ -27,6 +27,43 @@ The rounded values in `baseline.json` are from this generator's full-size Linux 
 
 To share the runnable fixture, use `python3 pack.py large-memory.tar.gz`. It includes the listed input files, synthetic baseline, and documentation screenshots; it leaves out installed dependencies, generated sources, build outputs, and raw measurements.
 
+## Compare release versions
+
+With Docker running, compare published Rspack releases on the same generated workload:
+
+```sh
+# Full workload, three rounds, baseline is the first version:
+npm run compare:versions -- 2.2.6 2.3.0 2.3.1 2.3.2
+# The command without arguments uses those same versions and settings.
+npm run compare:versions
+
+# Quick installation / report check:
+npm run compare:versions -- 2.2.6 2.3.2 --preset smoke --runs 1
+```
+
+Use exact npm versions, including prereleases; ranges and tags such as `latest` are rejected. `--runs` accepts 1–20 (default 3). On a Linux machine with Node 22.12+ and npm installed, append `--local` to run without Docker. `DOCKER_CONTEXT` selects a Docker engine. This comparison uses public **release bindings only** and a separate Node image; it does not install Rust, build diagnostic bindings or take heap snapshots.
+
+The command prints the path to a standalone HTML report in `results/compare-full/<timestamp>/` (or `compare-smoke/`). `latest.json` in the parent directory points to the latest report. Each invocation has its own directory. The HTML selector switches between server, client, and their time-aligned sum; tables show median peak RSS, steady RSS and steady V8 heap usage, min–max ranges, and percentage changes against the first requested version. Curves show an actual representative round, selected by proximity to the median combined peak. JSON contains every round and curve; CSV, Markdown and SVG exports are beside the HTML. To regenerate these reports, pass the run directory to `npm run compare:report -- RUN_DIRECTORY`.
+
+All versions, rounds, and server/client processes run **sequentially**. Each round first measures server, then client in a fresh process, and adds their curves after alignment at build start. The shorter run's final reading is held. The summed peak is an estimate that includes two process runtimes, not an observed concurrent peak or the sum of independent peaks. Steady state uses five samples after four explicit GCs while each compiler remains alive. Version order rotates each round. Consider the reported ranges when interpreting small differences; one round is only a quick check.
+
+Versions share one generated input and the same configuration, plugins, Node version and worker counts. The collector installs each release into a separate `.profile-cache/versions/` directory **before** measurement, verifies the loaded core and binding versions, and records lockfiles, input hashes, module/chunk counts and JavaScript bytes. JS sizes are read before the asset plugin's trailing-comment edits. A failed install/build or incomplete set of rounds is marked unsuccessful and excluded from comparison; the command exits nonzero. The repository's pinned dependencies and baseline are unchanged. Profiling and version comparison share a lock to prevent overlapping collection.
+
+This report compares process RSS and V8 counters. RSS minus V8 is not a measurement of Rust allocations. Use the separate deep profiler below for Rust/JS data structures and allocation sites; its diagnostic binding is pinned to the repository's toolchain version.
+
+Example full run on Linux arm64, Node 24.20.0 and six workers per pool (November 11, 2026), with 50,361 generated modules and three rounds per release. Values below are medians of the time-aligned server/client sum, in GiB:
+
+| Rspack | Peak RSS | Steady RSS | Steady V8 heap | Peak change vs 2.2.6 |
+| --- | ---: | ---: | ---: | ---: |
+| 2.2.6 | 20.313 | 16.866 | 3.377 | — |
+| 2.3.0 | 14.496 | 12.416 | 1.630 | -28.6% |
+| 2.3.1 | 14.205 | 12.483 | 1.642 | -30.1% |
+| 2.3.2 | 11.634 | 10.683 | 1.503 | -42.7% |
+
+These illustrative results use the separate-process estimate described above. Module, chunk and asset counts matched across versions; generated JS byte sizes changed by less than 0.05%. The report includes the observed run ranges and separate server/client results.
+
+![Release comparison report showing median memory, run ranges and RSS growth curves](docs/version-comparison.jpg)
+
 ## Memory snapshots and report
 
 With Docker running, collect both compilers and generate the report:

@@ -2,12 +2,21 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fork } from 'node:child_process';
 
-export async function collect({ preset, target, lane, out, checkpoint, binding }) {
+export async function collect({ preset, target, lane, out, checkpoint, binding, coreRoot, expectedVersion }) {
   fs.mkdirSync(out, { recursive: true });
   const log = fs.openSync(path.join(out, 'build.log'), 'w');
   const env = { ...process.env };
   // A caller's override must not silently change the release/JS measurement lanes.
   delete env.NAPI_RS_NATIVE_LIBRARY_PATH;
+  delete env.BENCH_CORE_ROOT;
+  delete env.BENCH_EXPECTED_VERSION;
+  if (coreRoot) {
+    if (lane !== 'release') throw Error('Version comparisons require the release lane');
+    env.BENCH_CORE_ROOT = coreRoot;
+    env.BENCH_EXPECTED_VERSION = expectedVersion;
+    delete env.NODE_OPTIONS;
+    delete env.NODE_PATH;
+  }
   if (lane === 'native') env.NAPI_RS_NATIVE_LIBRARY_PATH = binding;
   const child = fork(new URL('./worker.mjs', import.meta.url), [preset, target, lane, out, checkpoint ?? 'done#1'], {
     execArgv: ['--expose-gc', '--max-old-space-size=16384'], env,

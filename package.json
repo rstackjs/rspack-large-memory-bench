@@ -12,7 +12,9 @@
     "inspect": "node inspect.mjs",
     "profile": "node profiler/run.mjs",
     "profile:report": "node profiler/report.mjs",
-    "profile:test": "node --test profiler/tests/*.test.mjs"
+    "profile:test": "node --test profiler/tests/*.test.mjs",
+    "compare:versions": "node profiler/versions.mjs",
+    "compare:report": "node profiler/versions-report.mjs"
   },
   "dependencies": {
     "@rspack/core": "2.3.0-rc.0"

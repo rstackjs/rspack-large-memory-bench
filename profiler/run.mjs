@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { spawn, spawnSync } from 'node:child_process';
+import { run, launchDocker } from './environment.mjs';
 import { createHash } from 'node:crypto';
 import { collect } from './collect.mjs';
 
@@ -19,37 +19,8 @@ if (!['full', 'smoke'].includes(preset) || args.some(a => a.startsWith('--') && 
 const cache = path.join(root, '.profile-cache');
 fs.mkdirSync(cache, { recursive: true });
 const digest = file => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
-async function run(command, argv, options = {}) {
-  const p = spawn(command, argv, { stdio: 'inherit', ...options });
-  await new Promise((resolve, reject) => {
-    p.on('error', reject);
-    p.on('exit', (code, signal) => code === 0 ? resolve() : reject(Error(`${command} failed (${signal ?? code})`)));
-  });
-}
 if (!args.includes('--local') && !args.includes('--inside')) {
-  const info = spawnSync('docker', ['info', '--format', '{{.Architecture}}'], { encoding: 'utf8' });
-  if (info.status !== 0) throw Error('Start Docker first (or select an engine with DOCKER_CONTEXT).');
-  const arch = { aarch64: 'arm64', x86_64: 'amd64', arm64: 'arm64', amd64: 'amd64' }[info.stdout.trim()];
-  if (!arch) throw Error('The profiler supports native Linux arm64 and amd64 Docker engines.');
-  const platform = `linux/${arch}`;
-  const image = 'rspack-large-memory-profiler';
-  const imageKey = `${arch}:${digest('profiler/Dockerfile')}`;
-  const inspected = spawnSync('docker', ['image', 'inspect', '--format', '{{ index .Config.Labels "bench.profiler.input" }}', image], { encoding: 'utf8' });
-  if (inspected.status !== 0 || inspected.stdout.trim() !== imageKey)
-    await run('docker', ['build', '--platform', platform, '--label', `bench.profiler.input=${imageKey}`, '-t', image, '-f', 'profiler/Dockerfile', 'profiler']);
-  const modules = path.join(cache, 'linux-node_modules');
-  fs.mkdirSync(modules, { recursive: true });
-  fs.mkdirSync(path.join(root, 'results'), { recursive: true });
-  await run('docker', ['run', '--rm', '--init', '--platform', platform,
-    '-v', `${root}:/input:ro`, '-v', `${modules}:/case/node_modules`,
-    '-v', `${cache}:/case/.profile-cache`, '-v', `${path.join(root, 'results')}:/case/results`,
-    '-v', `${path.join(cache, 'cargo')}:/usr/local/cargo/registry`,
-    '-e', `RAYON_NUM_THREADS=${process.env.RAYON_NUM_THREADS ?? 6}`,
-    '-e', `TOKIO_WORKER_THREADS=${process.env.TOKIO_WORKER_THREADS ?? 6}`,
-    '-e', `CARGO_BUILD_JOBS=${process.env.CARGO_BUILD_JOBS ?? 4}`,
-    '-e', `PROFILE_UID=${process.platform === 'linux' ? process.getuid() : ''}`,
-    '-e', `PROFILE_GID=${process.platform === 'linux' ? process.getgid() : ''}`,
-    image, 'python3', '/input/profiler/bootstrap.py', preset]);
+  await launchDocker(root, [preset]);
   console.log(`Report: ${path.join(root, 'results/profile-' + preset, 'report.html')}`);
   process.exit(0);
 }
