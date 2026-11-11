@@ -30,6 +30,7 @@ export async function launchDocker(root, arguments_) {
   fs.mkdirSync(modules, { recursive: true });
   fs.mkdirSync(path.join(root, 'results'), { recursive: true });
   await run('docker', ['run', '--rm', '--init', '--platform', platform,
+    ...(process.env.DOCKER_DNS ? ['--dns', process.env.DOCKER_DNS] : []),
     '-v', `${root}:/input:ro`, '-v', `${modules}:/case/node_modules`,
     '-v', `${cache}:/case/.profile-cache`, '-v', `${path.join(root, 'results')}:/case/results`,
     '-v', `${path.join(cache, 'cargo')}:/usr/local/cargo/registry`,

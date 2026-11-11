@@ -6,6 +6,7 @@ if (!process.argv[2]) throw Error('Pass the comparison run directory');
 const out = path.resolve(process.argv[2]);
 const read = file => JSON.parse(fs.readFileSync(path.join(out, file)));
 const state = read('comparison.json');
+const reportTitle = state.options.versions.length === 1 ? `Rspack ${state.options.versions[0]} 内存报告` : 'Rspack 版本内存对比';
 const versions = [];
 let environment;
 for (const version of state.options.versions) {
@@ -28,7 +29,7 @@ for (const version of state.options.versions) {
   const representative = runs.find(r => r.round === aggregates.representativeRound);
   versions.push({ version, status: 'complete', lockSha256: entry.lockSha256, aggregates, representative, runs });
 }
-const baseline = versions.find(v => v.version === state.baseline && v.status === 'complete');
+const baseline = versions.length > 1 ? versions.find(v => v.version === state.baseline && v.status === 'complete') : undefined;
 for (const row of versions.filter(v => v.status === 'complete')) {
   row.deltaPercent = Object.fromEntries(['peakRss', 'steadyRss', 'peakHeap', 'steadyHeap'].map(metric => [metric,
     delta(row.aggregates.combined[metric].median, baseline?.aggregates.combined[metric].median)]));
@@ -65,7 +66,7 @@ const methods = [
   '每轮先把 server/client 的发布构建 RSS 曲线按各自开始时刻对齐叠加，再取叠加峰值；较短构建结束后保持最后稳态读数。它包含两份进程运行时，是合计估算，不是原双 compiler 并行构建的实测峰值，也不是两个独立峰值的直接相加。',
   '表格使用各轮指标的中位数，并列出最小值至最大值。稳态是 compiler close 前、空闲和四次显式 GC 后五次读数的中位数。RSS 每 20 ms 进程外采样，V8 每 50 ms 及 hook 边界采样，JS 同步阻塞会留下采样空隙。',
   '曲线展示合计 RSS 峰值最接近中位数的一轮实测数据，并非逐时刻拼接的中位数曲线。V8 指标是 heapUsed；RSS 减去 V8 不能解释成 Rust 存活数据。数据结构和分配位置仍需单版本深度诊断报告。',
-  `Δ 相对于请求列表中的第一个版本 ${state.baseline}。失败或未跑满指定轮数的版本不参与排名，也不填零；请结合波动范围和输出规模判断变化，单轮结果仅用于快速检查。`,
+  state.options.versions.length === 1 ? '这是单版本报告，不作跨版本增减比较；Δ 留空。请结合每轮波动范围判断读数。' : `Δ 相对于请求列表中的第一个版本 ${state.baseline}。失败或未跑满指定轮数的版本不参与排名，也不填零；请结合波动范围和输出规模判断变化，单轮结果仅用于快速检查。`,
 ];
 function chart(target, metric, name) {
   if (!complete.length) return '';
@@ -97,7 +98,7 @@ const shapes = complete.flatMap(v => ['server','client'].map(t => ({ version:v.v
 const shapeTable = `<div class="scroll"><table><thead><tr><th>版本</th><th>目标</th><th>模块数</th><th>chunk 数</th><th>JS MiB</th><th>asset 数</th><th>代表轮 VmHWM GiB</th></tr></thead><tbody>${shapes.map(r => `<tr><td>${esc(r.version)}</td><td>${r.target}</td><td>${r.modules}</td><td>${r.chunks}</td><td>${(r.jsBytes/2**20).toFixed(1)}</td><td>${r.assetFiles}</td><td>${gib(r.hwm)}</td></tr>`).join('')}</tbody></table></div>`;
 const rssSvg = chart('combined','rss','各版本合计 RSS 曲线');
 fs.writeFileSync(path.join(out,'timeline.svg'),rssSvg || '<svg xmlns="http://www.w3.org/2000/svg"/>');
-let html = `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rspack 版本内存对比</title><style>body{font:15px/1.65 system-ui,sans-serif;background:#f3f6fa;color:#172b45;margin:0}main{max-width:1280px;padding:30px;margin:auto}h1{font-size:32px;margin-bottom:8px}h2{margin-top:30px}article,details{background:white;border:1px solid #dae2ec;border-radius:10px;padding:20px;margin:18px 0}.scroll{overflow:auto}table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:12px;border-bottom:1px solid #e2e8f0;text-align:right;white-space:nowrap}th:first-child,td:first-child{text-align:left}small{display:block;color:#64748b;font-size:12px}.failed{color:#b91c1c;white-space:normal;text-align:left}.legend span{margin-right:20px}svg{width:100%;height:auto}summary{cursor:pointer;font-weight:600}li{margin:8px 0}a{color:#2563eb}select{font:inherit;padding:7px 12px}section[hidden]{display:none}</style><main><h1>Rspack 版本内存对比</h1><p>${esc(state.options.preset)} · ${state.manifest.modules.toLocaleString('en')} 个生成模块 · 每版本 ${state.options.runs} 轮 · 基准 ${esc(state.baseline)}</p><small>${esc(environmentText)} · ${esc(state.createdAt)}</small><p>每个单元格为中位数，下方为本次各轮最小值至最大值。正 Δ 表示内存增加，负 Δ 表示减少。</p><label>查看：<select id="target"><option value="combined">两端叠加（估算）</option><option value="server">server</option><option value="client">client</option></select></label>`;
+let html = `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(reportTitle)}</title><style>body{font:15px/1.65 system-ui,sans-serif;background:#f3f6fa;color:#172b45;margin:0}main{max-width:1280px;padding:30px;margin:auto}h1{font-size:32px;margin-bottom:8px}h2{margin-top:30px}article,details{background:white;border:1px solid #dae2ec;border-radius:10px;padding:20px;margin:18px 0}.scroll{overflow:auto}table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:12px;border-bottom:1px solid #e2e8f0;text-align:right;white-space:nowrap}th:first-child,td:first-child{text-align:left}small{display:block;color:#64748b;font-size:12px}.failed{color:#b91c1c;white-space:normal;text-align:left}.legend span{margin-right:20px}svg{width:100%;height:auto}summary{cursor:pointer;font-weight:600}li{margin:8px 0}a{color:#2563eb}select{font:inherit;padding:7px 12px}section[hidden]{display:none}</style><main><h1>${esc(reportTitle)}</h1><p>${esc(state.options.preset)} · ${state.manifest.modules.toLocaleString('en')} 个生成模块 · 每版本 ${state.options.runs} 轮${state.options.versions.length > 1 ? ' · 基准 ' + esc(state.baseline) : ''}</p><small>${esc(environmentText)} · ${esc(state.createdAt)}</small><p>每个单元格为中位数，下方为本次各轮最小值至最大值。正 Δ 表示内存增加，负 Δ 表示减少。</p><label>查看：<select id="target"><option value="combined">两端叠加（估算）</option><option value="server">server</option><option value="client">client</option></select></label>`;
 for (const target of ['combined','server','client']) html += `<section data-target="${target}" ${target==='combined'?'':'hidden'}><h2>${target==='combined'?'两端叠加':target}</h2><article>${table(target)}</article><article><h3>RSS 曲线</h3><div class="legend">${legends}</div>${chart(target,'rss',`${target} RSS`)}</article><details><summary>V8 heapUsed 曲线</summary>${chart(target,'v8',`${target} V8`)}</details></section>`;
 html += `${warnings.length?`<article><h2>输出变化</h2><ul>${warnings.map(w=>`<li>${esc(w)}</li>`).join('')}</ul></article>`:''}<details><summary>构建规模与内核高水位</summary>${shapeTable}</details><details><summary>测量口径与复现数据</summary><ol>${methods.map(m=>`<li>${esc(m)}</li>`).join('')}</ol><p><a href="comparison.json">采集计划与输入摘要</a> · <a href="report.json">完整结果</a> · <a href="report.csv">CSV</a> · <a href="report.md">Markdown</a></p></details></main><script>document.querySelector('#target').addEventListener('change',e=>document.querySelectorAll('[data-target]').forEach(s=>s.hidden=s.dataset.target!==e.target.value));</script></html>`;
 fs.writeFileSync(path.join(out,'report.html'),html);
@@ -115,7 +116,7 @@ for (const row of versions) {
   }
 }
 fs.writeFileSync(path.join(out,'report.csv'),csv.map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n')+'\n');
-let md=`# Rspack 版本内存对比\n\n${state.options.preset}，每版本 ${state.options.runs} 轮，基准 ${state.baseline}。以下为中位数，范围为各轮最小值–最大值。\n\n${environmentText} · ${state.manifest.modules} 个生成模块 · ${state.createdAt}。\n\n![对比曲线](timeline.svg)\n`;
+let md=`# ${reportTitle}\n\n${state.options.preset}，每版本 ${state.options.runs} 轮${state.options.versions.length > 1 ? '，基准 ' + state.baseline : ''}。以下为中位数，范围为各轮最小值–最大值。\n\n${environmentText} · ${state.manifest.modules} 个生成模块 · ${state.createdAt}。\n\n![对比曲线](timeline.svg)\n`;
 for (const target of ['combined','server','client']) {
   md+=`\n## ${target}\n\n| 版本 | RSS 峰值 GiB（范围） | RSS 稳态 GiB | V8 稳态 GiB | 峰值 Δ | 稳态 Δ |\n| --- | ---: | ---: | ---: | ---: | ---: |\n`;
   for (const row of versions) {

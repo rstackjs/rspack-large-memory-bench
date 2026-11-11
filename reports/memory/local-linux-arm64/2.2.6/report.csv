@@ -1,0 +1,4 @@
+"version","status","target","runs","peak_rss_gib","peak_rss_min_gib","peak_rss_max_gib","steady_rss_gib","steady_rss_min_gib","steady_rss_max_gib","peak_heap_gib","peak_heap_min_gib","peak_heap_max_gib","steady_heap_gib","steady_heap_min_gib","steady_heap_max_gib","peak_rss_delta_percent","steady_rss_delta_percent"
+"2.2.6","complete","combined","3","20.313","20.266","20.645","16.866","16.788","17.257","4.742","4.698","5.008","3.377","3.377","3.377","",""
+"2.2.6","complete","server","3","12.589","12.573","12.646","9.081","8.993","9.232","2.699","2.667","2.978","1.351","1.351","1.351","",""
+"2.2.6","complete","client","3","8.418","8.252","8.468","7.795","7.785","8.025","2.448","2.447","2.451","2.026","2.026","2.027","",""

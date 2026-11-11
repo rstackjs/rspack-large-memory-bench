@@ -14,7 +14,10 @@
     "profile:report": "node profiler/report.mjs",
     "profile:test": "node --test profiler/tests/*.test.mjs",
     "compare:versions": "node profiler/versions.mjs",
-    "compare:report": "node profiler/versions-report.mjs"
+    "compare:report": "node profiler/versions-report.mjs",
+    "history:import": "node profiler/history.mjs import",
+    "history:render": "node profiler/history.mjs render",
+    "history:reports": "node profiler/history-reports.mjs"
   },
   "dependencies": {
     "@rspack/core": "2.3.0-rc.0"

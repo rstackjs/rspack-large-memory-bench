@@ -1,7 +1,9 @@
 """Package only the portable inputs, without recording host or archive metadata."""
 import gzip
 import io
+import json
 from pathlib import Path
+import re
 import sys
 import tarfile
 
@@ -20,9 +22,24 @@ FILES = (
     "profiler/bootstrap.py", "profiler/environment.mjs", "profiler/releases.Dockerfile",
     "profiler/versions.mjs", "profiler/versions-model.mjs", "profiler/versions-report.mjs",
     "profiler/tests/versions.test.mjs",
+    "profiler/history.mjs", "profiler/history-model.mjs", "profiler/history-reports.mjs", "profiler/tests/history.test.mjs",
+    "history/releases.json",
     "docs/report-overview.jpg", "docs/report-distributions.jpg",
     "docs/report-allocations.jpg", "docs/version-comparison.jpg",
 )
+
+# Only named report artifacts for the versions in the public synthetic history.
+FILES += ("reports/memory/README.md",)
+for series in json.loads((ROOT / "history/releases.json").read_text())["series"]:
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", series["id"]):
+        raise ValueError("Invalid report series")
+    for release in series["releases"]:
+        if not re.fullmatch(r"\d+\.\d+\.\d+", release["version"]):
+            raise ValueError("Invalid report version")
+        prefix = "reports/memory/" + series["id"] + "/" + release["version"] + "/"
+        FILES += tuple(prefix + name for name in (
+            "comparison.json", "report.html", "report.md", "report.csv", "report.json", "timeline.svg",
+        ))
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:

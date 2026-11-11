@@ -25,7 +25,7 @@ npm run check -- results/run-1.json results/run-2.json results/run-3.json --shap
 
 The rounded values in `baseline.json` are from this generator's full-size Linux arm64 run with Node 24.20.0 and six workers per pool. Checks on other platforms may give different results. Peak RSS and V8 heap usage measure different things; their difference is not a measurement of Rust live allocations.
 
-To share the runnable fixture, use `python3 pack.py large-memory.tar.gz`. It includes the listed input files, synthetic baseline, and documentation screenshots; it leaves out installed dependencies, generated sources, build outputs, and raw measurements.
+To share the runnable fixture, use `python3 pack.py large-memory.tar.gz`. It includes the listed input files, synthetic baseline, documentation screenshots and curated release reports; it leaves out installed dependencies, generated sources, build outputs, collector logs and heap/native snapshots.
 
 ## Compare release versions
 
@@ -51,16 +51,34 @@ Versions share one generated input and the same configuration, plugins, Node ver
 
 This report compares process RSS and V8 counters. RSS minus V8 is not a measurement of Rust allocations. Use the separate deep profiler below for Rust/JS data structures and allocation sites; its diagnostic binding is pinned to the repository's toolchain version.
 
-Example full run on Linux arm64, Node 24.20.0 and six workers per pool (November 11, 2026), with 50,361 generated modules and three rounds per release. Values below are medians of the time-aligned server/client sum, in GiB:
+<!-- release-memory-history:start -->
+## Release memory history
 
-| Rspack | Peak RSS | Steady RSS | Steady V8 heap | Peak change vs 2.2.6 |
-| --- | ---: | ---: | ---: | ---: |
-| 2.2.6 | 20.313 | 16.866 | 3.377 | — |
-| 2.3.0 | 14.496 | 12.416 | 1.630 | -28.6% |
-| 2.3.1 | 14.205 | 12.483 | 1.642 | -30.1% |
-| 2.3.2 | 11.634 | 10.683 | 1.503 | -42.7% |
+Stable releases from **2.2.6** onward. Each entry preserves the first successful full run of three rounds. Values are GiB; peak ranges are the observed min–max, not confidence intervals. Server/client are measured serially and their curves are aligned before taking the combined peak. Steady state is measured after GC with the compiler alive.
 
-These illustrative results use the separate-process estimate described above. Module, chunk and asset counts matched across versions; generated JS byte sizes changed by less than 0.05%. The report includes the observed run ranges and separate server/client results.
+Different runner environments or benchmark revisions use separate series; do not compare their numbers directly. Machine-readable measurements, per-target metrics, input hashes and every round’s values are in [history/releases.json](history/releases.json).
+
+### local-linux-arm64
+
+linux/arm64, Node v24.20.0, Rayon 6, Tokio 6; 50,361 generated modules, 3 rounds.
+
+| Rspack | Measured (UTC) | Combined peak RSS (range) | Combined steady RSS | Combined steady V8 | Evidence |
+| --- | --- | ---: | ---: | ---: | --- |
+| 2.2.6 | 2026-11-11 | 20.313 (20.266–20.645) | 16.866 | 3.377 | [Report](reports/memory/local-linux-arm64/2.2.6/report.md) |
+| 2.2.7 | 2026-11-11 | 20.222 (20.135–20.962) | 16.958 | 3.377 | [Report](reports/memory/local-linux-arm64/2.2.7/report.md) |
+| 2.2.8 | 2026-11-11 | 18.064 (17.667–18.148) | 16.275 | 3.377 | [Report](reports/memory/local-linux-arm64/2.2.8/report.md) |
+| 2.2.9 | 2026-11-11 | 15.535 (15.496–15.673) | 13.634 | 1.626 | [Report](reports/memory/local-linux-arm64/2.2.9/report.md) |
+| 2.3.0 | 2026-11-11 | 14.496 (14.345–14.604) | 12.416 | 1.630 | [Report](reports/memory/local-linux-arm64/2.3.0/report.md) |
+| 2.3.1 | 2026-11-11 | 14.205 (14.202–14.265) | 12.483 | 1.642 | [Report](reports/memory/local-linux-arm64/2.3.1/report.md) |
+| 2.3.2 | 2026-11-11 | 11.634 (11.634–11.659) | 10.683 | 1.503 | [Report](reports/memory/local-linux-arm64/2.3.2/report.md) |
+
+<!-- release-memory-history:end -->
+
+Individual reports for all seven recorded releases are in [reports/memory](reports/memory/README.md). Each version has HTML, Markdown, CSV, JSON and an SVG curve; the HTML selector switches between server, client and their sum. These are release RSS/V8 reports, without diagnostic Rust allocation or JS object-size snapshots.
+
+To add another completed full comparison, run `npm run history:import -- RUN_DIRECTORY --series local-linux-arm64`, then `npm run history:reports`. Existing measurements are preserved. Exporting reports reuses the original data and does not rebuild; `npm run history:render` updates only the README table. Reports and compact history are included in the portable archive. No scheduled task is configured.
+
+The screenshot below is the initial four-version comparison, not the continuously updated history.
 
 ![Release comparison report showing median memory, run ranges and RSS growth curves](docs/version-comparison.jpg)
 
@@ -114,7 +132,7 @@ JS tables aggregate **shallow/self size** by V8 node type and constructor. Heap 
 
 The sum of two independent peak snapshots is labeled separately from the peak of their time-aligned curve. JS timers cannot run during synchronous work; raw time gaps are preserved. Native peak capture checks RSS every 50 ms and updates when it grows by 5%. The report keeps these measurement limits visible.
 
-For deeper inspection, load `server/js-peak/peak.heapsnapshot` or `client/js-steady/steady.heapsnapshot` in Chrome DevTools Memory. The `allocations.heapprofile` files contain JS cumulative allocation samples. `*/native/*-analysis.json` retains all symbolized Rust stacks and line locations. All generated snapshots, source checkouts, binaries and reports are ignored by Git and excluded from the share archive.
+For deeper inspection, load `server/js-peak/peak.heapsnapshot` or `client/js-steady/steady.heapsnapshot` in Chrome DevTools Memory. The `allocations.heapprofile` files contain JS cumulative allocation samples. `*/native/*-analysis.json` retains all symbolized Rust stacks and line locations. Raw profiling artifacts under `results/`, source checkouts and binaries are ignored by Git and excluded from the share archive. The curated release reports under `reports/memory/` are tracked and included.
 
 Regenerate a report without collecting again, or run the analysis regression checks:
 

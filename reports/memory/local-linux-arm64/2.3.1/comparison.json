@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-11-11T04:05:39.261Z",
+  "options": {
+    "versions": [
+      "2.3.1"
+    ],
+    "runs": 3,
+    "preset": "full",
+    "local": false,
+    "inside": true
+  },
+  "baseline": "2.3.1",
+  "status": "complete",
+  "order": [
+    {
+      "version": "2.3.1",
+      "round": 1
+    },
+    {
+      "version": "2.3.1",
+      "round": 2
+    },
+    {
+      "version": "2.3.1",
+      "round": 3
+    }
+  ],
+  "inputs": {
+    "generate.mjs": "83e27c7e794246492d4eaa0d5cb309bdcc8fc773a3df5d3ff4c1e86ac3defeef",
+    "config.mjs": "39095844aeeca7164d3e674413e624b98e4a251b30667262b1a35e5b4061ca7b",
+    "plugins.mjs": "24c1c34f99aa3ee4875266e5d77a60e0b12285a58a121e34433d438cb9fe79cd",
+    "mapped-input.cjs": "d75bfb553d87e0cf0e2e74dd9e6db4528ffbde6a92af6de26cf1ff326ad7a077",
+    "profiler/worker.mjs": "022403c6fbaab3239f9b20cc8f01f260d0dd2f60de56ca295d65bff51385ab80",
+    "profiler/collect.mjs": "51bb4ca9e2675490fc3e4ba92b38989f3cf08d33879be1b1566719aed2e063fc"
+  },
+  "versions": {
+    "2.3.1": {
+      "status": "complete",
+      "rounds": [
+        {
+          "round": 1,
+          "startedAt": "2026-11-11T04:07:56.747Z",
+          "finishedAt": "2026-11-11T04:09:00.903Z"
+        },
+        {
+          "round": 2,
+          "startedAt": "2026-11-11T04:11:07.741Z",
+          "finishedAt": "2026-11-11T04:12:11.561Z"
+        },
+        {
+          "round": 3,
+          "startedAt": "2026-11-11T04:14:26.763Z",
+          "finishedAt": "2026-11-11T04:15:31.097Z"
+        }
+      ],
+      "lockSha256": "7086e9346aa731250abca91f5b42411aad4103961a8cac1553745246734c5a4d"
+    }
+  },
+  "manifest": {
+    "preset": "full",
+    "routes": 1408,
+    "libraries": 384,
+    "modules": 50361,
+    "imports": 317017,
+    "dynamicImports": 2464,
+    "sourceBytes": 183415089
+  },
+  "finishedAt": "2026-11-11T04:18:47.313Z"
+}
