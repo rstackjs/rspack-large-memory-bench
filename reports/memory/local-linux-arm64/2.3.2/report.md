@@ -1,34 +1,34 @@
-# Rspack 2.3.2 内存报告
+# Rspack 2.3.2 memory report
 
-full，每版本 3 轮。以下为中位数，范围为各轮最小值–最大值。
+full, 3 rounds per version. Values are medians; ranges show the observed min–max across rounds.
 
-v24.20.0 · linux/arm64 · Rayon 6 / Tokio 6 · 50361 个生成模块 · 2026-11-11T04:05:39.261Z。
+v24.20.0 · linux/arm64 · Rayon 6 / Tokio 6 · 50361 generated modules · 2026-11-11T04:05:39.261Z.
 
-![对比曲线](timeline.svg)
+![Comparison curves](timeline.svg)
 
 ## combined
 
-| 版本 | RSS 峰值 GiB（范围） | RSS 稳态 GiB | V8 稳态 GiB | 峰值 Δ | 稳态 Δ |
+| Version | Peak RSS GiB (range) | Steady RSS GiB | Steady V8 GiB | Peak Δ | Steady Δ |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | 2.3.2 | 11.634 (11.634–11.659) | 10.683 | 1.503 | — | — |
 
 ## server
 
-| 版本 | RSS 峰值 GiB（范围） | RSS 稳态 GiB | V8 稳态 GiB | 峰值 Δ | 稳态 Δ |
+| Version | Peak RSS GiB (range) | Steady RSS GiB | Steady V8 GiB | Peak Δ | Steady Δ |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | 2.3.2 | 6.685 (6.671–6.708) | 5.832 | 0.421 | — | — |
 
 ## client
 
-| 版本 | RSS 峰值 GiB（范围） | RSS 稳态 GiB | V8 稳态 GiB | 峰值 Δ | 稳态 Δ |
+| Version | Peak RSS GiB (range) | Steady RSS GiB | Steady V8 GiB | Peak Δ | Steady Δ |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | 2.3.2 | 5.369 (5.306–5.821) | 4.851 | 1.082 | — | — |
 
-## 测量口径
+## Methodology
 
-- 使用每个版本自己的 npm release core 和 binding，不加载诊断 binding，也不采集 heap snapshot。各版本固定运行 3 轮，所有版本、轮次及 server/client 进程串行执行；轮次之间轮换版本顺序，依赖安装在测量前完成。
-- 各版本共用一次生成的同一份输入、相同配置与插件、Node 和 worker 数。记录生成清单、输入脚本 SHA-256、实际 core/binding 版本，以及各版本的独立依赖锁文件；不会修改仓库原来的依赖。构建规模表中的 JS 字节数在插件追加注释前统计。
-- 每轮先把 server/client 的发布构建 RSS 曲线按各自开始时刻对齐叠加，再取叠加峰值；较短构建结束后保持最后稳态读数。它包含两份进程运行时，是合计估算，不是原双 compiler 并行构建的实测峰值，也不是两个独立峰值的直接相加。
-- 表格使用各轮指标的中位数，并列出最小值至最大值。稳态是 compiler close 前、空闲和四次显式 GC 后五次读数的中位数。RSS 每 20 ms 进程外采样，V8 每 50 ms 及 hook 边界采样，JS 同步阻塞会留下采样空隙。
-- 曲线展示合计 RSS 峰值最接近中位数的一轮实测数据，并非逐时刻拼接的中位数曲线。V8 指标是 heapUsed；RSS 减去 V8 不能解释成 Rust 存活数据。数据结构和分配位置仍需单版本深度诊断报告。
-- 这是单版本报告，不作跨版本增减比较；Δ 留空。请结合每轮波动范围判断读数。
+- Each version uses its own published npm core and release binding, without a diagnostic binding or heap snapshots. Each version runs 3 rounds. All versions, rounds and server/client processes run sequentially; version order rotates each round, and dependency installation finishes before measurement.
+- All versions share one generated input, configuration, plugins, Node version and worker counts. The report records the generator manifest, input SHA-256 hashes, actual core/binding versions and separate dependency lockfiles. Repository dependencies remain unchanged. JavaScript byte counts are read before the asset plugin appends comments.
+- For each round, server/client release RSS curves are aligned at build start and added before taking the combined peak. The shorter run holds its final steady reading. This estimate includes two process runtimes; it is neither the measured concurrent dual-compiler peak nor the sum of independent peaks.
+- Tables show the median and min–max range across rounds. Steady state is the median of five samples after idle time and four explicit GCs, before compiler.close(). RSS is sampled externally every 20 ms; V8 is sampled every 50 ms and at hook boundaries. Synchronous JS work leaves sampling gaps.
+- Curves show the actual round whose combined RSS peak is nearest the median, not a pointwise median curve. V8 values are heapUsed. RSS minus V8 is not Rust live memory. Data structures and allocation sites require a separate diagnostic report.
+- This report covers one version, so cross-version deltas are unavailable. Interpret readings together with their round-to-round ranges.
